@@ -1,0 +1,1 @@
+# Mock API to demonstrate call from customised Keycloak registration flow
