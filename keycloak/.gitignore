@@ -1,0 +1,6 @@
+.idea
+postgres_data
+/*.iml
+
+/target/
+/.env
