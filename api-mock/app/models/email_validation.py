@@ -11,5 +11,5 @@ class EmailValidationRequest(EmailValidationBaseModel):
 
 
 class EmailValidationResponse(EmailValidationBaseModel):
-    allowed: bool
+    domain_allowed: bool
     message: str

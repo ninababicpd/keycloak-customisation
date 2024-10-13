@@ -11,6 +11,6 @@ app = FastAPI(title="User Management mock API",
 @app.post("/emails")
 def validate_email_domain(request: EmailValidationRequest) -> EmailValidationResponse:
     if email_domain_allowed(request.email):
-        return EmailValidationResponse(allowed=True, message="Email domain is allowed")
+        return EmailValidationResponse(domain_allowed=True, message="Email domain is allowed")
     else:
-        return EmailValidationResponse(allowed=False, message="Email domain is not allowed")
+        return EmailValidationResponse(domain_allowed=False, message="Email domain is not allowed")
