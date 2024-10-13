@@ -11,6 +11,5 @@ class EmailValidationRequest(EmailValidationBaseModel):
 
 
 class EmailValidationResponse(EmailValidationBaseModel):
-    status: str
     allowed: bool
     message: str
