@@ -5,3 +5,9 @@ __pycache__/
 *$py.class
 
 .Python
+
+.idea/
+
+.DS_Store
+
+/*.iml
