@@ -5,6 +5,15 @@ volumes:
       driver: local
 
 services:
+# Un-comment this service if you want to run api mock in container and not natively
+#  api-mock:
+#    container_name: api-mock
+#    build:
+#      context: ../api-mock
+#    ports:
+#      - "8023:8023"
+#    volumes:
+#      - /app/data/api-mock
   postgres:
       image: postgres:latest
       volumes:
