@@ -1,9 +1,5 @@
 version: '3'
 
-volumes:
-  postgres_data:
-      driver: local
-
 services:
 # Un-comment this service if you want to run api mock in a container and not natively
 #  api-mock:
@@ -17,22 +13,23 @@ services:
   postgres:
       image: postgres:latest
       volumes:
-        - ./postgres_data:/var/lib/postgresql/data
+        - postgres_data:/var/lib/postgresql/data
       env_file:
         - .env
       ports:
         - "5434:5432"
+
   keycloak:
       build:
         context: .
       env_file:
         - .env
-      volumes:
-        - ./realm:/opt/keycloak/data/import
       ports:
         - "8083:8080"
-        - "8789:8787"
       depends_on:
         - postgres
-      # Themes flags useful for development --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
-      entrypoint: /opt/keycloak/bin/kc.sh start-dev --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false --import-realm
+      # Flags useful during themes development --spi-theme-static-max-age=-1 --spi-theme-cache-themes=false --spi-theme-cache-templates=false
+      entrypoint: /opt/keycloak/bin/kc.sh start-dev
+
+volumes:
+  postgres_data:
