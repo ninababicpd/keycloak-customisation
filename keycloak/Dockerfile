@@ -1,13 +1,13 @@
-FROM maven:3.8.7-openjdk-18-slim as builder
+FROM maven:3.8.7-openjdk-18-slim AS builder
 
-WORKDIR /opt/productdock/
+WORKDIR /app
 
 COPY ./pom.xml .
 RUN mvn dependency:resolve
 
-COPY . .
+COPY ./src ./src
 RUN mvn clean package -DskipTests
 
 FROM quay.io/keycloak/keycloak:26.0.0
 
-COPY --from=builder /opt/productdock/target/*.jar /opt/keycloak/providers
+COPY --from=builder /app/target/*.jar /opt/keycloak/providers
