@@ -31,7 +31,6 @@ import java.util.List;
 
 import static com.productdock.keycloak.extension.CustomMessages.EMAIL_DOMAIN_NOT_ALLOWED;
 import static com.productdock.keycloak.extension.CustomMessages.INTERNAL_SERVER_ERROR;
-import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
