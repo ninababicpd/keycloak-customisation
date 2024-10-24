@@ -15,12 +15,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.keycloak.authentication.FormActionFactory;
-import org.keycloak.authentication.FormContext;
 import org.keycloak.authentication.ValidationContext;
 import org.keycloak.authentication.forms.RegistrationUserCreation;
 import org.keycloak.events.Details;
 import org.keycloak.events.Errors;
-import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.messages.Messages;
 import org.keycloak.userprofile.Attributes;
@@ -28,15 +26,15 @@ import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.ValidationException;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.productdock.keycloak.extension.CustomMessages.EMAIL_DOMAIN_NOT_ALLOWED;
-import static com.productdock.keycloak.extension.CustomMessages.NETWORK_ISSUES;
+import static com.productdock.keycloak.extension.CustomMessages.INTERNAL_SERVER_ERROR;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.keycloak.models.UserModel.EMAIL;
 import static org.keycloak.models.UserModel.USERNAME;
 import static org.keycloak.models.utils.FormMessage.GLOBAL;
@@ -59,6 +57,11 @@ public class CustomRegistrationUserCreation extends RegistrationUserCreation {
     @Override
     public String getDisplayType() {
         return "Custom Registration - with email domain check";
+    }
+
+    @Override
+    public String getHelpText() {
+        return "This action must always be first! Validates the username and user profile of the user in validation phase. It also validates email and checks if email domain is allowed. In success phase, this will create the user in the database including his user profile.";
     }
 
     @Override
@@ -111,10 +114,10 @@ public class CustomRegistrationUserCreation extends RegistrationUserCreation {
                 context.validationError(formData, errors);
                 return;
             }
-        } catch (IOException | URISyntaxException e) {
-            log.infof("Error occurred during call to mock API: %s", e.toString());
-            context.error(NETWORK_ISSUES);
-            errors.add(new FormMessage(null, NETWORK_ISSUES));
+        } catch (IOException e) {
+            log.infof("Unexpected Error occurred during call to Mock API: %s", e.toString());
+            context.error(INTERNAL_SERVER_ERROR);
+            errors.add(new FormMessage(GLOBAL, INTERNAL_SERVER_ERROR));
             context.validationError(formData, errors);
             return;
         }
@@ -122,65 +125,56 @@ public class CustomRegistrationUserCreation extends RegistrationUserCreation {
         context.success();
     }
 
-    private boolean emailDomainAllowed(String email) throws IOException, URISyntaxException {
+    private boolean emailDomainAllowed(String email) throws IOException {
         log.info("Checking if provided email domain is allowed.");
 
+        HttpPost request = new HttpPost(getMockApiUrl());
+        request.setHeader("Content-Type", "application/json");
+        request.setEntity(generateRequestBody(email));
+
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String mockApiUrl = getenv("MOCK_API_URL");
-
-            HttpPost request = new HttpPost(mockApiUrl);
-            request.setHeader("Content-Type", "application/json");
-            request.setEntity(generateRequestBody(email));
-
-            log.info("Checking email validity.");
+            log.info("Calling mock API to check email validity.");
             try (CloseableHttpResponse response = httpClient.execute(request)) {
-                log.info("Calling mock API to check email validity.");
-
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode != 200) {
                     log.infof("Mock API returned invalid response: %s; with status code: %s",
                             response.getStatusLine().getReasonPhrase(), statusCode);
-                    throw new IOException(format("Invalid response from Mock API: %s", statusCode));
-                }
-                HttpEntity entity = response.getEntity();
-
-                if (entity == null) {
-                    throw new IOException(format("Invalid response from Mock API: %s", statusCode));
+                    throw new MockAPIException("Invalid response from Mock API.");
                 }
 
-                return domainAllowed(entity);
+                HttpEntity responseBody = response.getEntity();
+                if (responseBody == null) {
+                    log.info("Mock API returned invalid response. Response body is missing");
+                    throw new MockAPIException("Invalid response from Mock API.");
+                }
+                return domainAllowed(responseBody);
             }
         }
     }
 
-    private static StringEntity generateRequestBody(String email) throws JsonProcessingException, UnsupportedEncodingException {
+    private String getMockApiUrl() {
+        String mockApiUrl = getenv("MOCK_API_URL");
+        if (isEmpty(mockApiUrl)) {
+            throw new IllegalArgumentException("MOCK_API_URL is not set.");
+        }
+        return mockApiUrl;
+    }
+
+    private static StringEntity generateRequestBody(String email) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode requestBody = mapper.createObjectNode();
         requestBody.put("email", email);
-
         String requestBodyJSON = mapper.writeValueAsString(requestBody);
-        return new StringEntity(requestBodyJSON);
+        return new StringEntity(requestBodyJSON, APPLICATION_JSON);
     }
 
     private boolean domainAllowed(HttpEntity entity) throws IOException {
         log.info("Successful call to mock API - extracting info if email domain is allowed.");
-
         String responseBody = EntityUtils.toString(entity);
         JsonNode responseJson = objectMapper.readTree(responseBody);
         if (responseJson == null || !responseJson.has(DOMAIN_ALLOWED)) {
-            return false;
+            throw new MockAPIException("Domain validation failed: DOMAIN_ALLOWED field is missing or null.");
         }
         return responseJson.path(DOMAIN_ALLOWED).asBoolean();
     }
-
-    @Override
-    public void success(FormContext context) {
-        super.success(context);
-    }
-
-    @Override
-    public void buildPage(FormContext context, LoginFormsProvider form) {
-
-    }
-
 }
