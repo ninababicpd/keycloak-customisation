@@ -39,6 +39,7 @@ import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static org.keycloak.models.UserModel.EMAIL;
 import static org.keycloak.models.UserModel.USERNAME;
+import static org.keycloak.models.utils.FormMessage.GLOBAL;
 import static org.keycloak.services.validation.Validation.getFormErrorsFromValidation;
 
 @JBossLog
@@ -106,7 +107,7 @@ public class CustomRegistrationUserCreation extends RegistrationUserCreation {
             if (!emailDomainAllowed(email)) {
                 log.info("Provided email domain is not allowed");
                 context.error(EMAIL_DOMAIN_NOT_ALLOWED);
-                errors.add(new FormMessage(null, EMAIL_DOMAIN_NOT_ALLOWED));
+                errors.add(new FormMessage(GLOBAL, EMAIL_DOMAIN_NOT_ALLOWED));
                 context.validationError(formData, errors);
                 return;
             }
