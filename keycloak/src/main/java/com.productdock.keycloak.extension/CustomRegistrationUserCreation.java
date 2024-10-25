@@ -126,12 +126,11 @@ public class CustomRegistrationUserCreation extends RegistrationUserCreation {
 
     private boolean emailDomainAllowed(String email) throws IOException {
         log.info("Checking if provided email domain is allowed.");
-
-        HttpPost request = new HttpPost(getMockApiUrl());
-        request.setHeader("Content-Type", "application/json");
-        request.setEntity(generateRequestBody(email));
-
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpPost request = new HttpPost(getMockApiUrl());
+            request.setHeader("Content-Type", "application/json");
+            request.setEntity(generateRequestBody(email));
+
             log.info("Calling mock API to check email validity.");
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 int statusCode = response.getStatusLine().getStatusCode();
