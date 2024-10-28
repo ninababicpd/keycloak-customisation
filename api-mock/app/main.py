@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from services.email_validation_service import email_domain_allowed
-from models.email_validation import EmailValidationRequest, EmailValidationResponse
+from app.services.email_validation_service import email_domain_allowed
+from app.models.email_validation import EmailValidationRequest, EmailValidationResponse
 
 app = FastAPI(title="User Management mock API")
 
